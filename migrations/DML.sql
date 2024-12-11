@@ -365,11 +365,3 @@ VALUES
         23,
         2
     );
-
-
-SELECT name, paycheck, ARRAY_AGG(adress) AS adresses
-            FROM 
-                managers m
-                INNER JOIN managers_restaurants mr on mr.manager_id = m.id
-                INNER JOIN restaurants r on r.id = mr.restaurant_id
-            GROUP BY name, paycheck;
