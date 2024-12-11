@@ -4,7 +4,8 @@ class CustomerRepository(BaseRepository):
     def get_restaurants(self):
         query = """
             SELECT adress, open_hour, close_hour, phone, email
-            FROM restaurants;
+            FROM restaurants
+            ORDER BY id;
         """
         return self.fetchall("customer", query)
     

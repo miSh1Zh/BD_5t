@@ -24,11 +24,9 @@ def show_menu_page(): # добавить блюдо и разместить ег
 
     if st.session_state.menu.shape[0] > 0:
         st.dataframe(st.session_state.menu.rename(columns={"name": "Dish", "category": "Category", "price": "Price"})[["Dish", "Category", "Price"]], hide_index=True)
-    else:
-        st.session_state.menu = CustomerService().get_menu(adresses[0])
     
     dish_name = st.text_input("New dish")
-    categories = [categ for categ in set(st.session_state.menu["category"].to_list())]
+    categories = [categ for categ in set(CustomerService().get_menu(adresses[0])["category"].to_list())]
     category = st.selectbox("Select dish category:", categories)
     price = st.number_input("Price", format="%0.1f", min_value=150.0, step=50.0)
     
