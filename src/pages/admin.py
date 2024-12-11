@@ -79,7 +79,6 @@ def show_renting_page():
             service.add_restaurant(new_adress, phone, email)
             st.write("Registration complete")
             st.session_state.update_rest = True
-            st.rerun()
         except:
             st.write("Could not register")
 

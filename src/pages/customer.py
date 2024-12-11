@@ -19,34 +19,38 @@ def show_make_order_page():
         )
     st.session_state.menu = service.get_menu(selected_adress)
 
-    categories = [categ for categ in set(st.session_state.menu["category"].to_list())]
-    category = st.selectbox("Select dish category:", categories)
+    if st.session_state.menu.shape[0] > 0:
+
+        categories = [categ for categ in set(st.session_state.menu["category"].to_list())]
+        category = st.selectbox("Select dish category:", categories)
 
 
-    dishes = [dish for dish in st.session_state.menu["name"][st.session_state.menu["category"] == category]]
-    selected_dish = st.selectbox("Select dish:", dishes)
+        dishes = [dish for dish in st.session_state.menu["name"][st.session_state.menu["category"] == category]]
+        selected_dish = st.selectbox("Select dish:", dishes)
 
-    quantity = st.number_input("Quantity", min_value=1, max_value=10, value=1)
+        quantity = st.number_input("Quantity", min_value=1, max_value=10, value=1)
 
-    if st.button("Add dish"):
-        dish_info = st.session_state.menu[st.session_state.menu["name"] == selected_dish]
-        dish_info["quanity"] = [quantity] 
-        st.session_state.order_list_products = pd.concat(
-            [st.session_state.order_list_products, dish_info], ignore_index=True
-        )
+        if st.button("Add dish"):
+            dish_info = st.session_state.menu[st.session_state.menu["name"] == selected_dish]
+            dish_info["quanity"] = [quantity] 
+            st.session_state.order_list_products = pd.concat(
+                [st.session_state.order_list_products, dish_info], ignore_index=True
+            )
 
-    st.write(f"Bill: {(st.session_state.order_list_products.price * st.session_state.order_list_products.quanity).sum()}")
-    st.dataframe(st.session_state.order_list_products[["name", "price", "quanity"]], hide_index=True)
-    
-    if st.button("Make order") and len(st.session_state.order_list_products["name"]) > 0:
-        list_products = st.session_state.order_list_products.groupby(["name", "dish_id"]).agg({"price": 'mean', "quanity": 'sum'}).reset_index()
-        list_products["price"] = list_products["price"] * list_products["quanity"]
-        # st.dataframe(list_products)
-        service.make_order(selected_adress, sum(list_products["price"]), st.session_state.id, list_products[["dish_id", "quanity"]]) 
-        st.write(f"Your order has been sent for approval")
-        st.session_state.order_list_products = pd.DataFrame(
-            columns=["name", "price", "quanity"]
-        )
+        st.write(f"Bill: {(st.session_state.order_list_products.price * st.session_state.order_list_products.quanity).sum()}")
+        st.dataframe(st.session_state.order_list_products[["name", "price", "quanity"]], hide_index=True)
+        
+        if st.button("Make order") and len(st.session_state.order_list_products["name"]) > 0:
+            list_products = st.session_state.order_list_products.groupby(["name", "dish_id"]).agg({"price": 'mean', "quanity": 'sum'}).reset_index()
+            list_products["price"] = list_products["price"] * list_products["quanity"]
+            # st.dataframe(list_products)
+            service.make_order(selected_adress, sum(list_products["price"]), st.session_state.id, list_products[["dish_id", "quanity"]]) 
+            st.write(f"Your order has been sent for approval")
+            st.session_state.order_list_products = pd.DataFrame(
+                columns=["name", "price", "quanity"]
+            )
+    else:
+        st.write("No menu in selected restaurant")
 
 
 
