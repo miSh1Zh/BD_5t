@@ -150,29 +150,44 @@ ALTER TABLE
     dishes_restaurants ADD CONSTRAINT dishes_restaurants_dish_id_foreign FOREIGN KEY(dish_id) REFERENCES dishes(id);
 
 
+-- (?) процедура добавления заказа ->
+CREATE OR REPLACE PROCEDURE make_order(
+    p_address VARCHAR(255),
+    p_bill INT,
+    p_customer_id INT,
+    p_dish_list JSONB
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_restaurant_id INT;
+    v_order_id INT;
+    v_dish_id INT;
+    v_quantity INT;
+BEGIN
+    SELECT id INTO v_restaurant_id
+    FROM restaurants
+    WHERE adress = p_address;
 
-CREATE PROCEDURE 
-search_dish_in_orders(dish_name VARCHAR, id_of_customer INT)
-LANGUAGE plpgsql
-AS $$
-BEGIN 
-    WITH 
-    orders_with_dish AS (
-        SELECT order_id
-        FROM orders_dishes od INNER JOIN dishes d on d.id = od.dish_id
-        WHERE name = dish_name
-    )
+    INSERT INTO orders (bill, customer_id, restaurant_id)
+    VALUES (p_bill, p_customer_id, v_restaurant_id)
+    RETURNING id INTO v_order_id;
 
-    SELECT bill, id, approved, time, restaurant_id
-    FROM orders
-    WHERE id in (SELECT order_id FROM orders_with_dish) and customer_id = id_of_customer;
+    FOR v_dish_id, v_quantity IN
+        SELECT (dish ->> 'dish_id')::INT, (dish ->> 'quanity')::INT
+        FROM jsonb_array_elements(p_dish_list) AS dish
+    LOOP
+        INSERT INTO orders_dishes (order_id, dish_id, positions_in_order)
+        VALUES (v_order_id, v_dish_id, v_quantity);
+    END LOOP;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE WARNING 'An error occurred: %', SQLERRM;
 END;
 $$;
--- (?) процедура одобрения заказа -> TBC 
 
 
 -- To use trigger, we need a purpose -> orders_log
-
 CREATE TABLE orders_log(
     order_id INT NOT NULL,
     create_time TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
@@ -283,6 +298,9 @@ GRANT SELECT on events_in_restaurants to customer;
 GRANT SELECT, INSERT on bills to customer;
 GRANT SELECT, INSERT, UPDATE, DELETE on orders to customer;
 GRANT SELECT, INSERT, UPDATE, DELETE on orders_dishes to customer;
+-- не прокатило
+-- GRANT ALL on PROCEDURE make_order to customer; 
+
 
 
 

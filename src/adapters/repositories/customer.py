@@ -27,31 +27,37 @@ class CustomerRepository(BaseRepository):
         return self.fetchall("customer", query, (adress,))
     
     def make_order(self, adress, bill, customer_id, dish_list):
-        query = """
-            SELECT id
-            FROM restaurants
-            WHERE adress = %s;
-        """
-        restaurant_id = self.fetchone("customer", query, (adress,))["id"]
+        # query = """
+        #     SELECT id
+        #     FROM restaurants
+        #     WHERE adress = %s;
+        # """
+        # restaurant_id = self.fetchone("customer", query, (adress,))["id"]
+
+        # query = """
+        #     INSERT INTO 
+        #         orders (bill, customer_id, restaurant_id)
+        #     VALUES
+        #         (%s, %s, %s) 
+        #     RETURNING id; 
+        # """
+        # order_id = self.fetchone("admin", query, (bill, customer_id, restaurant_id))["id"]
+        
+        # query = """
+        #     INSERT INTO 
+        #         orders_dishes (order_id, dish_id, positions_in_order)
+        #     VALUES
+        #         (%s, %s, %s) 
+        # """
+        # for dish in dish_list["dish_id"]:
+        #     quanity = dish_list["quanity"][dish_list["dish_id"] == dish].to_list()[0]
+        #     self.execute("customer", query, (order_id, dish, quanity))
 
         query = """
-            INSERT INTO 
-                orders (bill, customer_id, restaurant_id)
-            VALUES
-                (%s, %s, %s) 
-            RETURNING id; 
+            CALL make_order(%s::VARCHAR(255), %s::INT, %s::INT, %s::JSONB);
         """
-        order_id = self.fetchone("admin", query, (bill, customer_id, restaurant_id))["id"]
-        
-        query = """
-            INSERT INTO 
-                orders_dishes (order_id, dish_id, positions_in_order)
-            VALUES
-                (%s, %s, %s) 
-        """
-        for dish in dish_list["dish_id"]:
-            quanity = dish_list["quanity"][dish_list["dish_id"] == dish].to_list()[0]
-            self.execute("customer", query, (order_id, dish, quanity))
+
+        self.execute("admin", query, (adress, bill, customer_id, dish_list))
     
     def get_self_info(self, customer_id):
         query = """

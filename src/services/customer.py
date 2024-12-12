@@ -17,7 +17,8 @@ class CustomerService:
         res = pd.DataFrame(self._repo.get_events(adress))
         return res
     def make_order(self, adress: str, bill: int, customer_id: int, dish_list: pd.DataFrame):
-        self._repo.make_order(adress, bill, customer_id, dish_list)
+        dish_list_json = dish_list.to_json(orient='records')
+        self._repo.make_order(adress, bill, customer_id, dish_list_json)
     def get_self_info(self, customer_id: int):
         return self._repo.get_self_info(customer_id)
     def view_orders(self, customer_id: int, grouping: str):
