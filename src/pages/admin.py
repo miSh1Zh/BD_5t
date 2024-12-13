@@ -59,7 +59,7 @@ def show_hiring_page():
             service.place_manager(selected_manager_id, selected_restaurant_id)
             st.write("Hire complete")
         except:
-            st.write("Already working in selected restaurant")
+            st.write("Someting go wrong")
 
 
 def show_renting_page():
