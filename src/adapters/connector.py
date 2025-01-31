@@ -2,6 +2,7 @@ import psycopg2.pool
 from contextlib import contextmanager
 import logging
 import atexit
+import sys
 from settings import POOL_MIN_CONN, POOL_MAX_CONN, DB_NAME, DB_PORT, DB_HOST, DB_USER, DB_PASSWORD
 
 
@@ -10,10 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 logger.info("Initializing connection pool...")
-connection_pool_allmight = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT)
-connection_pool_managers = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT, options='-c role=manager')
-connection_pool_customers = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT, options='-c role=customer')
-
+try:
+    connection_pool_allmight = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT)
+    connection_pool_managers = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT, options='-c role=manager')
+    connection_pool_customers = psycopg2.pool.SimpleConnectionPool(POOL_MIN_CONN, POOL_MAX_CONN, host=DB_HOST, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, port=DB_PORT, options='-c role=customer')
+except:
+    logger.info(f"Could not connect to database with params: name={DB_NAME}, host={DB_HOST}, user={DB_USER}, port={DB_PORT}")
+    sys.exit(1)
 
 @contextmanager
 def get_connection(role):
