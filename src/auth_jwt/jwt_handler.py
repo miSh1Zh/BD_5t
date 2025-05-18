@@ -21,7 +21,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     redis_client.setex(
         f"token:{encoded_jwt}",
         int(expires_delta.total_seconds() if expires_delta else JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60),
-        str(to_encode["user_id"])  # user_id
+        str(to_encode["user_id"])
     )
     return encoded_jwt
 
