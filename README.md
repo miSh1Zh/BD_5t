@@ -6,3 +6,5 @@
 Группа: М8О-306Б-22  
 
 [Отчет](https://docs.google.com/document/d/1UKYHy6fSff8bvyj-hZWoP2FytbIw8ewMMi3ZQZFEFf8/edit?tab=t.0)
+
+> PS доработан в 6 семестре в рамках второй лабораторной работы (используется redis и все обернуто в docker)

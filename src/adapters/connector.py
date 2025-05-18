@@ -2,8 +2,10 @@ import psycopg2.pool
 from contextlib import contextmanager
 import logging
 import atexit
+import redis
+from datetime import timedelta
 import sys
-from settings import POOL_MIN_CONN, POOL_MAX_CONN, DB_NAME, DB_PORT, DB_HOST, DB_USER, DB_PASSWORD
+from settings import POOL_MIN_CONN, POOL_MAX_CONN, DB_NAME, DB_PORT, DB_HOST, DB_USER, DB_PASSWORD, REDIS_DB, REDIS_HOST, REDIS_PORT 
 
 
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +39,33 @@ def get_connection(role):
         elif role == "customer":
             connection_pool_customers.putconn(connection)
 
+
+####################################################
+
+logger.info(f"Initializing redis with host={REDIS_HOST}, db={REDIS_DB} on port {REDIS_PORT}")
+try:
+    redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+except:
+    logger.info(f"Could not connect to redis with params: host={REDIS_HOST}, db={REDIS_DB}, port {REDIS_PORT}")
+    sys.exit(1)
+
+def get_redis_client():
+    try:
+        return redis_client
+    except:
+        logger.info(f"No redis_client returned")
+        sys.exit(2)
+
+def get_cached_data(key, fetch_func, ttl=300):
+    cached = redis_client.get(key)
+    if cached:
+        return pickle.loads(cached)
+    data = fetch_func()
+    redis_client.setex(key, ttl, pickle.dumps(data))
+    return data
+
+
+####################################################
 
 def close_connection_pool():
     if connection_pool_managers:

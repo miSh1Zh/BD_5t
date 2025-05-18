@@ -5,6 +5,7 @@ from pages.admin import main_admin
 import pandas as pd
 import numpy as np
 import streamlit as st
+from auth_jwt.jwt_handler import verify_token
 
 
 service = AuthorizationService()
@@ -27,6 +28,7 @@ def login_user():
     if st.button("Sign in"):
         if "account" not in st.session_state or  not st.session_state.account[0] > 0:
             st.session_state.account = service.login(login, password)
+
         role = "customer"
         if st.session_state.account[0] == 0:
             st.write("No such login, go to sign up page")
@@ -34,15 +36,30 @@ def login_user():
             st.write("Wrong password, try again")
         else:
             st.session_state.id = st.session_state.account[0]
-            if st.session_state.account[1] == 1:
-                role = "manager"
-            elif st.session_state.account[1] == 2:
-                role = "admin"
+            role = st.session_state.account[1]
         return role
 
 
 
 if __name__ == "__main__":
+    
+    token = None
+
+    try:
+        token = st.query_params.token
+    except:
+         st.write("Sign in")
+
+
+    if token is not None:
+        # st.write("Verify")
+        user_data = verify_token(token)
+        # st.write(user_data["user_id"])
+        if user_data:
+            st.session_state.id = user_data["user_id"]
+            st.session_state.role = user_data.get("role", "customer")
+    
+    
     if "id" not in st.session_state:
         st.session_state.role = "customer"
         st.sidebar.title("Navigation")
@@ -52,6 +69,11 @@ if __name__ == "__main__":
         )
         if page == "Sign in":
             st.session_state.role = login_user()
+            if "account" in st.session_state and st.session_state.account[2] is not None:
+                st.session_state.id = st.session_state.account[0]
+                st.session_state.token = st.session_state.account[2]
+                st.query_params.token=st.session_state.token
+                print(st.session_state.account)
         elif page == "Sign up":
             register_user()
     else:

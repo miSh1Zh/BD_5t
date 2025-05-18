@@ -1,0 +1,8 @@
+fastapi
+pandas
+psycopg2_binary
+PyJWT
+bcrypt
+redis
+streamlit
+numpy

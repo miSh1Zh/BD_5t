@@ -2,6 +2,7 @@ from adapters.repositories.base import BaseRepository
 import bcrypt
 import pandas as pd
 import numpy as np
+from auth_jwt.jwt_handler import create_access_token, verify_token, revoke_token
 
 def hash_password(password):
     salt = bcrypt.gensalt()
@@ -51,7 +52,7 @@ class AuthorizationRepository(BaseRepository):
             WHERE login = %s;
         """
         hashed_password_res = self.fetchone("admin", query, (login,))
-        account = [0, 0]
+        account = [0, "customer", None] # id, role, token
         if hashed_password_res:
             hashed_password = hashed_password_res["hash_password"]
             if check_password(password, hashed_password):
@@ -62,10 +63,19 @@ class AuthorizationRepository(BaseRepository):
                 """
                 res = self.fetchone("admin", query, (login,))
                 account[0] = res["id"]
-                if res["role"] == "manager":
-                    account[1] = 1
-                elif res["role"] == "admin":
-                    account[1] = 2
+                account[1] = res["role"]
             else:
                 account[0] = -1
+        
+        if account[0] > 0:
+            access_token = create_access_token(
+                data={"user_id": res["id"], "role": res["role"]},
+            )
+            account[2] = access_token
         return account
+    
+    def validate_token(self, token: str):
+        return verify_token(token)
+    
+    def logout(self, token: str):
+        revoke_token(token)
