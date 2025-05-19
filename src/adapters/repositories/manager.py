@@ -1,7 +1,32 @@
 from adapters.repositories.base import BaseRepository
-import pandas as pd
-import numpy as np
+import threading
+import json
 
+from adapters.connector import get_cache_data, put_cache_data, create_pubsub, subscribe_to_channel, listen_for_messages, publish_message, delete_cache_data
+
+CACHE_KEY = "manager"
+
+
+def start_cache_invalidator(channel):
+        """Фоновый поток для обработки сообщений об инвалидации кеша"""
+        def listener():
+            pubsub = create_pubsub()
+            subscribe_to_channel(pubsub, channel)
+            
+            for message in pubsub.listen():
+                if message['type'] == 'message':
+                    try:
+                        data = json.loads(message['data'])
+                        if data:
+                            cache_key = data
+                            delete_cache_data(cache_key)
+                    except:
+                        continue
+
+        thread = threading.Thread(target=listener, daemon=True)
+        thread.start()
+    
+start_cache_invalidator(f'{CACHE_KEY}:unapproved_orders')
 
 class ManagerRepository(BaseRepository):
     def add_dish(self, name, category, price):
@@ -41,32 +66,44 @@ class ManagerRepository(BaseRepository):
         return [res["name"], str(res["paycheck"])]
     
     def get_restaurants(self, manager_id):
-        query = """
-            SELECT adress, restaurant_id, phone, email, open_hour, close_hour
-            FROM 
-                managers_restaurants mr
-                INNER JOIN restaurants r on r.id = mr.restaurant_id 
-            WHERE manager_id = %s;
-        """
-        return self.fetchall("manager", query, (manager_id,))
+        cur_key = f'{CACHE_KEY}:restaurants' 
+        data = None
+        if not data:
+            query = """
+                SELECT adress, restaurant_id, phone, email, open_hour, close_hour
+                FROM 
+                    managers_restaurants mr
+                    INNER JOIN restaurants r on r.id = mr.restaurant_id 
+                WHERE manager_id = %s;
+            """
+            data = self.fetchall("manager", query, (manager_id,))
+        return data
     
     def get_unapproved_orders(self, restaurant_id):
-        query = """
-            SELECT o.id AS order_id, name, phone, bill
-            FROM 
-                orders o
-                INNER JOIN customers c on c.id = o.customer_id
+        cur_key = f"{CACHE_KEY}:unapproved_orders"
+        data = get_cache_data(cur_key)
+        if not data:
+            query = """
+                SELECT o.id AS order_id, name, phone, bill
+                FROM 
+                    orders o
+                    INNER JOIN customers c on c.id = o.customer_id
 
-            WHERE restaurant_id = %s and approved = false
-            ORDER BY order_id ASC;
-        """
-        return self.fetchall("manager", query, (restaurant_id,))
+                WHERE restaurant_id = %s and approved = false
+                ORDER BY order_id ASC;
+            """
+            data = self.fetchall("manager", query, (restaurant_id,))
+            put_cache_data(cur_key, data)
+        return data
     
-    def approve_order(self, order_id):
+    def approve_order(self, order_id, restaurant_id):
         query = """
             UPDATE orders
             SET approved = true
             WHERE id = %s;
         """
         self.execute("manager", query, (order_id,))
+        cur_key = f"{CACHE_KEY}:unapproved_orders"
+        message = cur_key
+        publish_message(cur_key, message)
         

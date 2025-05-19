@@ -1,5 +1,9 @@
 from adapters.repositories.base import BaseRepository
 
+from adapters.connector import get_cache_data, put_cache_data, publish_message, logger
+
+CACHE_KEY = "customer"
+
 class CustomerRepository(BaseRepository):
     def get_restaurants(self):
         query = """
@@ -10,13 +14,18 @@ class CustomerRepository(BaseRepository):
         return self.fetchall("customer", query)
     
     def get_menu(self, adress):
-        query = """
-            SELECT category, name, price, dish_id
-            FROM menu_in_restaurants
-            WHERE adress = %s
-            ORDER BY category;
-        """
-        return self.fetchall("customer", query, (adress,))
+        cur_key = f'{CACHE_KEY}:menu'
+        data = get_cache_data(cur_key)
+        if not data:
+            query = """
+                SELECT category, name, price, dish_id
+                FROM menu_in_restaurants
+                WHERE adress = %s
+                ORDER BY category;
+            """
+            data = self.fetchall("customer", query, (adress,))
+            put_cache_data(cur_key, data)
+        return data
     
     def get_events(self, adress):
         query = """
@@ -58,6 +67,13 @@ class CustomerRepository(BaseRepository):
         """
 
         self.execute("admin", query, (adress, bill, customer_id, dish_list))
+
+        cur_key = f"manager:unapproved_orders"
+        message = cur_key
+        try:
+            publish_message(cur_key, message)
+        except:
+            logger.info("No managers in restaurant")
     
     def get_self_info(self, customer_id):
         query = """

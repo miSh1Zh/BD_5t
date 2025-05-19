@@ -5,7 +5,8 @@ import atexit
 import redis
 from datetime import timedelta
 import sys
-from settings import POOL_MIN_CONN, POOL_MAX_CONN, DB_NAME, DB_PORT, DB_HOST, DB_USER, DB_PASSWORD, REDIS_DB, REDIS_HOST, REDIS_PORT 
+import json
+from settings import POOL_MIN_CONN, POOL_MAX_CONN, DB_NAME, DB_PORT, DB_HOST, DB_USER, DB_PASSWORD, REDIS_DB, REDIS_HOST, REDIS_PORT, CACHE_TTL
 
 
 logging.basicConfig(level=logging.INFO)
@@ -56,14 +57,76 @@ def get_redis_client():
         logger.info(f"No redis_client returned")
         sys.exit(2)
 
-def get_cached_data(key, fetch_func, ttl=300):
-    cached = redis_client.get(key)
-    if cached:
-        return pickle.loads(cached)
-    data = fetch_func()
-    redis_client.setex(key, ttl, pickle.dumps(data))
-    return data
+def put_cache_data(key, data, ttl=CACHE_TTL):
+    logger.info(f"Put data to redis with key = {key}...")
+    redis_client.set(key, json.dumps(data), ex=ttl)
+    logger.info("Done")
 
+def get_cache_data(key):
+    logger.info(f"Try to get data with key = {key}...")
+    cached = redis_client.get(key)
+
+    if cached:
+        logger.info(f"Get data with key = {key}")
+        return json.loads(cached)
+    logger.info(f"No data with key = {key} was found")
+    return None
+
+def delete_cache_data(key):
+    logger.info(f'Try to delete cache for key = {key}...')
+    try:
+        logger.info(f'Delete {key}')
+        redis_client.delete(key)
+    except:
+        logger.error(f'No cache {key}')
+        raise
+
+def create_pubsub():
+    """Создает объект pubsub для подписки на каналы"""
+    try:
+        return redis_client.pubsub()
+    except Exception as e:
+        logger.error(f"Failed to create pubsub: {str(e)}")
+        raise
+
+def subscribe_to_channel(pubsub, channel):
+    """Подписывается на указанный канал"""
+    try:
+        logger.info(f"Subscribing to channel: {channel}")
+        pubsub.subscribe(channel)
+        # Получаем первое сообщение подписки (подтверждение подписки)
+        pubsub.get_message(timeout=1.0)
+        return pubsub
+    except Exception as e:
+        logger.error(f"Failed to subscribe to channel {channel}: {str(e)}")
+        raise
+
+def publish_message(channel, message):
+    """Публикует сообщение в указанный канал"""
+    try:
+        logger.info(f"Publishing message to channel {channel}")
+        return redis_client.publish(channel, json.dumps(message))
+    except Exception as e:
+        logger.error(f"Failed to publish message to channel {channel}: {str(e)}")
+        raise
+
+def listen_for_messages(pubsub, callback, timeout=None):
+    """
+    Слушает сообщения из подписки и вызывает callback для каждого сообщения.
+    callback должен принимать один аргумент - сообщение.
+    """
+    try:
+        while True:
+            message = pubsub.get_message(timeout=timeout)
+            if message and message['type'] == 'message':
+                try:
+                    data = json.loads(message['data'])
+                    callback(data)
+                except json.JSONDecodeError:
+                    callback(message['data'])
+    except Exception as e:
+        logger.error(f"Error in listen_for_messages: {str(e)}")
+        raise
 
 ####################################################
 

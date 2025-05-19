@@ -19,5 +19,5 @@ class ManagerService:
         return pd.DataFrame(self._repo.get_restaurants(manager_id))
     def get_unapproved_orders(self, restaurant_id: int):
         return pd.DataFrame(self._repo.get_unapproved_orders(restaurant_id))
-    def approve_order(self, order_id: int):
-        self._repo.approve_order(order_id)
+    def approve_order(self, order_id: int, restaurant_id: int):
+        self._repo.approve_order(order_id, restaurant_id)

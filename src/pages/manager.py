@@ -70,7 +70,7 @@ def show_orders_page():
             if order_to_approve not in st.session_state.orders_table["order_id"].to_list():
                 st.write(f"Could not approve order {order_to_approve} (not in the list)")
             else:
-                service.approve_order(order_to_approve)
+                service.approve_order(order_to_approve, int(st.session_state.rest))
                 st.write(f"Approve order {order_to_approve}")
                 st.session_state.update_orders = True
     else:
