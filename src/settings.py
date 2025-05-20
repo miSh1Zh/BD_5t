@@ -9,7 +9,7 @@ POOL_MIN_CONN = int(os.getenv("POOL_MIN_CONN", 10))
 POOL_MAX_CONN = int(os.getenv("POOL_MAX_CONN", 40))
 
 
-CACHE_TTL=os.getenv("CACHE_TTL")
+CACHE_TTL=int(os.getenv("CACHE_TTL", 60))
 CACHE_KEY="orders:top"
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT")

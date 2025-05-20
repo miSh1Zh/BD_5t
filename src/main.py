@@ -11,20 +11,9 @@ from auth_jwt.jwt_handler import verify_token
 service = AuthorizationService()
 
 
-def register_user():
-    new_login = st.text_input("Create login")
-    new_password = st.text_input("Create password", type='password')
-    name = st.text_input("Name")
-    phone = st.text_input("Phone (like +7 XXX XXX-XX-XX)")
-    if st.button("Sign up"):
-        if(service.login(new_login, new_password)[0] != 0):
-            st.write("Already registered, go to sign in page")
-        else:
-           st.session_state.id = service.register_customer(new_login, new_password, name, phone)
+           
 
-def login_user():
-    login = st.text_input("Login")
-    password = st.text_input("Password", type='password')
+def login_user(login, password):
     if st.button("Sign in"):
         if "account" not in st.session_state or  not st.session_state.account[0] > 0:
             st.session_state.account = service.login(login, password)
@@ -39,6 +28,17 @@ def login_user():
             role = st.session_state.account[1]
         return role
 
+def register_user():
+    new_login = st.text_input("Create login")
+    new_password = st.text_input("Create password", type='password')
+    name = st.text_input("Name")
+    phone = st.text_input("Phone (like +7 XXX XXX-XX-XX)")
+    if st.button("Sign up"):
+        if(service.login(new_login, new_password)[0] != 0):
+            st.write("Already registered, go to sign in page")
+        else:
+           service.register_customer(new_login, new_password, name, phone)
+           st.write("Go to sign in page")
 
 
 if __name__ == "__main__":
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     try:
         token = st.query_params.token
     except:
-         st.write("Sign in")
+        token = None
 
 
     if token is not None:
@@ -68,7 +68,9 @@ if __name__ == "__main__":
             ["Sign in", "Sign up"]
         )
         if page == "Sign in":
-            st.session_state.role = login_user()
+            login = st.text_input("Login")
+            password = st.text_input("Password", type='password')
+            st.session_state.role = login_user(login, password)
             if "account" in st.session_state and st.session_state.account[2] is not None:
                 st.session_state.id = st.session_state.account[0]
                 st.session_state.token = st.session_state.account[2]
