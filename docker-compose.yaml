@@ -45,12 +45,12 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=5432
       - POOL_MIN_CONN=${POOL_MIN_CONN}
       - POOL_MAX_CONN=${POOL_MAX_CONN}
 
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PORT=6379
       - REDIS_DB=${REDIS_DB}
 
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
