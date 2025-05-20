@@ -6,6 +6,7 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_HOST=${DB_HOST}
+      - POSTGRES_PORT=${DB_PORT}
     build: 
       context: .
       dockerfile: Dockerfile_postgres
@@ -13,8 +14,9 @@ services:
     volumes:
       - ./migrations:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+    command: -p ${DB_PORT}
     ports:
-      - ${DB_PORT}:5432
+      - 5432:${DB_PORT}
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 1m30s
@@ -26,8 +28,9 @@ services:
     image: redis:latest
     container_name: redis
     restart: unless-stopped
+    command: --port ${REDIS_PORT}
     ports:
-      - "${REDIS_PORT}:6379"
+      - 6379:${REDIS_PORT}
     volumes:
       - redis_data:/data
 
@@ -39,18 +42,18 @@ services:
     volumes:
       - ./src:/src
     ports:
-      - ${APP_PORT}:8501
+      - 8501:8501
     environment:
       - DB_NAME=${DB_NAME}
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_PORT=5432
+      - DB_PORT=${DB_PORT}
       - POOL_MIN_CONN=${POOL_MIN_CONN}
       - POOL_MAX_CONN=${POOL_MAX_CONN}
 
       - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=6379
+      - REDIS_PORT=${REDIS_PORT}
       - REDIS_DB=${REDIS_DB}
 
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}

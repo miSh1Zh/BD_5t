@@ -1,6 +1,5 @@
 FROM postgres:16
 
+
 COPY ./migrations/DDL.sql /docker-entrypoint-initdb.d/
 COPY ./migrations/DML.sql /docker-entrypoint-initdb.d/
-
-EXPOSE 5432
