@@ -25,10 +25,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def verify_token(token: str) -> Optional[dict]:
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        
         if not get_cache_data(f"token:{token}"):
             return None
+        
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        
             
         user_id = payload["user_id"]
         if user_id is None:
